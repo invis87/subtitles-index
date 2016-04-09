@@ -3,7 +3,6 @@ package com.quotify.subs
 import akka.actor.ActorSystem
 import akka.io.IO
 import akka.util.Timeout
-import com.quotify.subs.actors.MainActor
 import com.sksamuel.elastic4s.ElasticDsl._
 import org.slf4j.LoggerFactory
 import spray.can.Http

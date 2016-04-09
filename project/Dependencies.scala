@@ -15,7 +15,7 @@ object Dependencies {
   val slf4jToLog4j = "org.slf4j" % "slf4j-log4j12" % slf4jVersion
   val typesafeConfig = "com.typesafe" % "config" % typesafeVersion
   val akka = "com.typesafe.akka" %% "akka-actor" % akkaVersion
-  val specs2 = "org.specs2" %% "specs2" % specs2Version % "test"
+  val specs2 = "org.specs2" %% "specs2-core" % specs2Version % "test"
 
   object Scala {
     val scalaCompiler = "org.scala-lang" % "scala-compiler" % scalaVersion
@@ -33,7 +33,7 @@ object Dependencies {
     val sprayCan = "io.spray" %% "spray-can" % sprayVersion
     val sprayRouting = "io.spray" %% "spray-routing" % sprayVersion
     val sprayJson = "io.spray" %% "spray-json" % sprayJsonVersion
-    val sprayTestkit = "io.spray" %% "spray-testkit" % sprayVersion % "test"
+    val sprayTestkit = "io.spray" %% "spray-testkit" % sprayVersion % "test" exclude("org.specs2", "specs2_2.11")
 
     val all = Seq(sprayCan, sprayRouting, sprayJson, sprayTestkit)
   }

@@ -1,4 +1,4 @@
-package com.quotify.subs.actors
+package com.quotify.subs
 
 import akka.actor.{Actor, Props}
 import akka.util.Timeout
