@@ -4,7 +4,6 @@ import com.quotify.subs.protocol.TestConnection
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 import spray.http.StatusCodes._
-import spray.httpx.SprayJsonSupport._
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -13,11 +12,12 @@ import scala.concurrent.{ExecutionContextExecutor, Future}
   */
 class MainServiceSpec extends Specification with Specs2RouteTest with MainService {
 
+  import spray.httpx.SprayJsonSupport._
+  import com.quotify.subs.JsonProtocol._
+
   override def executionContext: ExecutionContextExecutor = system.dispatcher
 
   def actorRefFactory = system
-
-  import com.quotify.subs.JsonProtocol._
 
   val testConnectionResponse = "Successfully!"
 
@@ -27,10 +27,9 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
       Get("/testConnection") ~> route ~> check {
         handled === true
         response.status should be equalTo OK
-        responseAs[TestConnection].testResult === testConnectionResponse
+        responseAs[TestConnection].result === testConnectionResponse
       }
     }
-
   }
 
   override def testConnection: Future[TestConnection] = Future.successful(TestConnection(testConnectionResponse))

@@ -9,7 +9,7 @@ object Dependencies {
   val specs2Version = "3.7"
   val akkaVersion = "2.4.3"
 
-  val elasticCore = "com.sksamuel.elastic4s" %% "elastic4s-core" % elasticVersion
+  val elasticCore = "com.sksamuel.elastic4s" %% "elastic4s-core" % elasticVersion exclude("joda-time", "joda-time")
   val elasticTestkit = "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elasticVersion % "test"
 
   val slf4jToLog4j = "org.slf4j" % "slf4j-log4j12" % slf4jVersion

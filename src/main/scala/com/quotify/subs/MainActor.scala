@@ -3,7 +3,6 @@ package com.quotify.subs
 import akka.actor.{Actor, Props}
 import akka.util.Timeout
 import com.quotify.subs.protocol.TestConnection
-import spray.httpx.SprayJsonSupport._
 import spray.routing.HttpService
 
 import scala.concurrent.duration._
@@ -20,12 +19,13 @@ class MainActor extends Actor with MainService {
   def receive = runRoute(route)
 
   override def testConnection: Future[TestConnection] = {
-    Future.successful(new TestConnection("Successfully!"))
+    Future.successful(TestConnection("Successfully!"))
   }
 
 }
 
 trait MainService extends HttpService {
+  import spray.httpx.SprayJsonSupport._
   import com.quotify.subs.JsonProtocol._
 
   implicit val timeout = Timeout(5.seconds)

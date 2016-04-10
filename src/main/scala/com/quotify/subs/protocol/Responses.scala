@@ -1,3 +1,3 @@
 package com.quotify.subs.protocol
 
-case class TestConnection(testResult: String)
+case class TestConnection(result: String)

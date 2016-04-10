@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.util.Timeout
 import com.sksamuel.elastic4s.ElasticDsl._
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import spray.can.Http
 import scala.concurrent.duration._
@@ -34,6 +35,8 @@ object Main {
 
     implicit val timeout = Timeout(5.seconds)
 
-    IO(Http) ? Http.Bind(service, interface = "localhost", port = 8080)
+    val interface = ConfigFactory.load().getString("spray.interface")
+    val port = ConfigFactory.load().getInt("spray.port")
+    IO(Http) ? Http.Bind(service, interface, port)
   }
 }
