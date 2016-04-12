@@ -32,6 +32,6 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
     }
   }
 
-  override def testConnection: Future[TestConnection] = Future.successful(TestConnection(testConnectionResponse))
+  override def testConnection: TestConnection = TestConnection(testConnectionResponse)
 
 }

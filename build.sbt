@@ -13,4 +13,6 @@ libraryDependencies ++= Seq(
 
 dependencyOverrides ++= Scala.all.toSet
 
+fork in run := true
+
 cancelable in Global := true
