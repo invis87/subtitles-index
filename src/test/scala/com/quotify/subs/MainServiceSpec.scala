@@ -1,6 +1,6 @@
 package com.quotify.subs
 
-import com.quotify.subs.protocol.TestConnection
+import com.quotify.subs.protocol.{SubtitlesAdded, SubtitlesEntity, TestConnection}
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 import spray.http.StatusCodes._
@@ -34,4 +34,10 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
 
   override def testConnection: TestConnection = TestConnection(testConnectionResponse)
 
+  override def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]] = {
+    Future.successful(
+      //todo: this is stub. fix it
+      Right(SubtitlesAdded(475634765))
+    )
+  }
 }
