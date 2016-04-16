@@ -2,17 +2,22 @@ package com.quotify.subs
 
 import akka.actor.{Actor, Props}
 import akka.util.Timeout
+import com.quotify.subs.parser.Parser
 import com.quotify.subs.protocol.{ErrorResponse, SubtitlesAdded, TestConnection, SubtitlesEntity}
+import com.sksamuel.elastic4s.{IndexResult, ElasticClient}
 import spray.routing.HttpService
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
+import com.sksamuel.elastic4s.ElasticDsl._
+
+import scala.util.{Failure, Success}
 
 object MainActor {
-  def props(): Props = Props(new MainActor())
+  def props(elastic: ElasticClient): Props = Props(new MainActor(elastic))
 }
 
-class MainActor extends Actor with MainService {
+class MainActor(elastic: ElasticClient) extends Actor with MainService {
   override def executionContext: ExecutionContextExecutor = context.dispatcher
 
   def actorRefFactory = context
@@ -24,9 +29,30 @@ class MainActor extends Actor with MainService {
   }
 
   override def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]] = {
-    Future.successful(
-    //todo: this is stub. fix it
-      Right(SubtitlesAdded(475634765))
+    val subs = Parser.parse(subtitles.subtitles.lines)
+
+    val indexResults: List[Future[IndexResult]] = subs.map(sub =>
+      elastic.execute { index into "movies" / "subtitles" fields
+        ("id" -> subtitles.mediaId, //todo: избыточность! (в каждом индексе есть mediaId
+        "from" -> sub.start,
+        "to" -> sub.end,
+        "text" -> sub.text)
+      })
+
+
+    //todo: rewrite
+    val xx: Future[List[IndexResult]] = Future.sequence(indexResults)
+
+//    xx onComplete {
+//      case Success(indexes) => Right(SubtitlesAdded(subtitles.mediaId))
+//      case Failure(e) => Left(ErrorResponse(555))
+//    }
+
+    xx.map(indexes =>
+      if(indexes.forall(result => result.isCreated))
+        Right(SubtitlesAdded(subtitles.mediaId))
+    else
+        Left(ErrorResponse(555))
     )
   }
 }

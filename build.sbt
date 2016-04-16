@@ -16,3 +16,11 @@ dependencyOverrides ++= Scala.all.toSet
 fork in run := true
 
 cancelable in Global := true
+
+assemblyMergeStrategy in assembly := {
+//  case PathList("joda-time", "joda-time", xs @ _*)         => MergeStrategy.deduplicate
+  case x =>
+    println(x)
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}

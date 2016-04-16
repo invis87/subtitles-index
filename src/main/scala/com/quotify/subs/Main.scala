@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.io.IO
 import akka.util.Timeout
 import com.sksamuel.elastic4s.ElasticDsl._
+import com.sksamuel.elastic4s.IndexResult
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import spray.can.Http
@@ -19,9 +20,11 @@ object Main {
   def elasticTest() = {
 
     val client = Elastic.client()
-    client.java
     val resp1 = client.execute { delete index "habrahabr" }.await
     logger.info(s"Delete response: $resp1")
+
+    val resp2: IndexResult = client.execute { index into "habrahabr" / "users" fields "name" -> "Vova" }.await
+    logger.info(s"Delete response: $resp2")
 
     // now we can search for the document we indexed earlier
     val resp = client.execute { search in "habrahabr" / "users" query "Vova" }.await
@@ -31,7 +34,9 @@ object Main {
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("subtitles-system")
 
-    val service = system.actorOf(MainActor.props(), "main-actor")
+    val client = Elastic.client()
+
+    val service = system.actorOf(MainActor.props(client), "main-actor")
 
     implicit val timeout = Timeout(5.seconds)
 
