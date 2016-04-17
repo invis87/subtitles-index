@@ -1,18 +1,19 @@
 package com.quotify.subs
 
-import akka.actor.{ActorRefFactory, Actor, Props}
+import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.util.Timeout
 import com.quotify.subs.JsonProtocol._
+import com.quotify.subs.elastic.Elastic
 import com.quotify.subs.error.ErrorCode
 import com.quotify.subs.error.ServiceExceptions.SubtitlesParsingError
 import com.quotify.subs.parser.{Parser, Sub}
 import com.quotify.subs.protocol._
 import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.{RichSearchHit, ElasticClient, IndexResult, RichSearchResponse}
+import com.sksamuel.elastic4s.{ElasticClient, IndexResult, RichSearchHit, RichSearchResponse}
+import org.slf4j.LoggerFactory
 import spray.httpx.SprayJsonSupport._
-import spray.routing.{HttpService, ExceptionHandler, HttpServiceActor}
-import spray.util.LoggingContext
-
+import spray.routing.{ExceptionHandler, HttpService}
+import spray.json._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success, Try}
@@ -23,22 +24,25 @@ object MainActor {
 
 class MainActor(elastic: ElasticClient) extends Actor with MainService {
   override def executionContext: ExecutionContextExecutor = context.dispatcher
-  override implicit def actorRefFactory: ActorRefFactory = context
+  def actorRefFactory: ActorRefFactory = context
+  val logger = LoggerFactory.getLogger(this.getClass)
 
-  implicit def myExceptionHandler(implicit log: LoggingContext) =
+  implicit def myExceptionHandler() =
     ExceptionHandler {
       case e: SubtitlesParsingError =>
-        log.warning("SubtitlesParsingError")
+        logger.warn("SubtitlesParsingError")
         complete(ErrorResponse(ErrorCode.PARSING_ERROR, "subtitles parsing error"))
     }
 
   def receive = runRoute(route)
 
   override def testConnection: TestConnection = {
+    logger.debug("Receive TestConnection request.")
     TestConnection("Successfully!")
   }
 
   override def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded] = {
+    logger.debug("Receive AddMoviesSubtitles request.\n{}", subtitles.toJson)
     val trySubs = Try(Parser.parse(subtitles.subtitles.lines))
     trySubs match {
       case Success(subs) => indexing(subtitles.mediaId, subs)
@@ -47,8 +51,10 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
   }
 
   private def indexing(mediaId: Int, subs: List[Sub]): Future[SubtitlesAdded] = {
+    val startTime =  System.currentTimeMillis
+    logger.debug("Start indexing subtitles for mediaId={}", mediaId)
     val indexResults: List[Future[IndexResult]] = subs.map(sub =>
-      elastic.execute { index into "movies" / "subtitleType" id indexId(mediaId, sub.number) fields
+      elastic.execute { index into Elastic.INDEX_NAME / Elastic.TYPE_NAME id indexId(mediaId, sub.number) fields
         ( "mediaId" -> mediaId,
           "from" -> sub.startTime,
           "to" -> sub.endTime,
@@ -56,6 +62,10 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
       })
 
     def processIndexingResult(results: List[IndexResult]): SubtitlesAdded = {
+      logger.debug("Indexing subtitles for mediaId={} took {}s",
+        mediaId,
+        (System.currentTimeMillis - startTime) / 1000
+      )
       val addedSubs = results.filter(res => res.isCreated).map(res => res.getId)
       SubtitlesAdded(mediaId, addedSubs)
     }
@@ -70,10 +80,13 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
 
   override def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind] = {
     val searchResult: Future[RichSearchResponse] = elastic.execute {
-      search in "subtitles" query searchEntity.text
+      search in Elastic.INDEX_NAME query searchEntity.text
     }
 
-    searchResult.map(res => parseSearchRes(res.hits))
+    searchResult.map(res => {
+      logger.debug("Receive Search request for text '{}'. Search took {}s", searchEntity.text, res.tookInMillis/1000)
+      parseSearchRes(res.hits)
+    })
   }
 
   private def parseSearchRes(searchHits: Array[RichSearchHit]): SubtitlesFind = {
