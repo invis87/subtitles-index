@@ -8,15 +8,18 @@ object Dependencies {
   val typesafeVersion = "1.3.0"
   val specs2Version = "3.7"
   val akkaVersion = "2.4.3"
+  val logbackVersion = "1.1.7"
+  val akkaSlf4jVersion = "2.4.4"
 
-  //todo: заэксклудить joda-time и добавить её как явную зависимость себе... Суки эластики блядь, зачем изменённую версию юзают?
   val elasticCore = "com.sksamuel.elastic4s" %% "elastic4s-core" % elasticVersion
   val elasticTestkit = "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elasticVersion % "test"
 
-  val slf4jToLog4j = "org.slf4j" % "slf4j-log4j12" % slf4jVersion
   val typesafeConfig = "com.typesafe" % "config" % typesafeVersion
   val akka = "com.typesafe.akka" %% "akka-actor" % akkaVersion
+  val akkaSlf4j = "com.typesafe.akka" %% "akka-slf4j" % akkaSlf4jVersion
+
   val specs2 = "org.specs2" %% "specs2-core" % specs2Version % "test"
+  val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
 
   object Scala {
     val scalaCompiler = "org.scala-lang" % "scala-compiler" % scalaVersion

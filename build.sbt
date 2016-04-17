@@ -7,8 +7,8 @@ version := "1.0"
 scalaVersion := Dependencies.scalaVersion
 
 libraryDependencies ++= Seq(
-  Dependencies.elasticCore, Dependencies.elasticTestkit, Dependencies.slf4jToLog4j, Dependencies.typesafeConfig,
-  Dependencies.akka, Dependencies.specs2
+  Dependencies.elasticCore, Dependencies.elasticTestkit, Dependencies.logback, Dependencies.typesafeConfig,
+  Dependencies.akka, Dependencies.specs2, Dependencies.akkaSlf4j
 ) ++ Dependencies.Spray.all
 
 dependencyOverrides ++= Scala.all.toSet
@@ -18,9 +18,9 @@ fork in run := true
 cancelable in Global := true
 
 assemblyMergeStrategy in assembly := {
-//  case PathList("joda-time", "joda-time", xs @ _*)         => MergeStrategy.deduplicate
+  //elastic4s-core have different BaseDateTime.class
+  case PathList("org","joda","time","base", "BaseDateTime.class") => MergeStrategy.first
   case x =>
-    println(x)
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
 }

@@ -1,6 +1,7 @@
 package com.quotify.subs
 
-import com.quotify.subs.protocol.{SubtitlesAdded, SubtitlesEntity, TestConnection}
+import akka.actor.Actor.Receive
+import com.quotify.subs.protocol._
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
 import spray.http.StatusCodes._
@@ -16,10 +17,10 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
   import com.quotify.subs.JsonProtocol._
 
   override def executionContext: ExecutionContextExecutor = system.dispatcher
-
   def actorRefFactory = system
 
   val testConnectionResponse = "Successfully!"
+
 
   "MainService" should {
 
@@ -34,10 +35,15 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
 
   override def testConnection: TestConnection = TestConnection(testConnectionResponse)
 
-  override def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]] = {
+  override def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded] = {
     Future.successful(
       //todo: this is stub. fix it
-      Right(SubtitlesAdded(475634765))
+      SubtitlesAdded(475634765, List("475634765_1"))
     )
   }
+
+
+
+  override def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind] = ???
+
 }

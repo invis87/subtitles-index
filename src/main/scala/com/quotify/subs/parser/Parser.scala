@@ -1,12 +1,8 @@
 package com.quotify.subs.parser
 
-import java.text.SimpleDateFormat
-
 import scala.annotation.tailrec
 
 object Parser {
-
-  val dateFormat = new SimpleDateFormat("hh:mm:ss")
 
   def parse(strings: Iterator[String]): List[Sub] = {
 
@@ -29,7 +25,7 @@ object Parser {
 
   private def subFromList(strs: List[String]): Sub = {
     val number = strs.head.toInt
-    val (start :: end :: _) = strs(1).split(" --> ").map(dateFormat.parse).toList
+    val (start :: end :: _) = strs(1).split(" --> ").toList
     val text = strs.drop(2) mkString " "
     Sub(number, start, end, text)
   }
