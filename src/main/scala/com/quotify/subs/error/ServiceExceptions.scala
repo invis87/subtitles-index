@@ -5,6 +5,7 @@ package com.quotify.subs.error
   */
 object ServiceExceptions {
 
+  class ParseError(cause: Throwable) extends Exception(cause)
   class SubtitlesParsingError(message: String, cause: Throwable) extends RuntimeException(message, cause)
 
 }

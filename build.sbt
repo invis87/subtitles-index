@@ -8,7 +8,7 @@ scalaVersion := Dependencies.scalaVersion
 
 libraryDependencies ++= Seq(
   Dependencies.elasticCore, Dependencies.elasticTestkit, Dependencies.logback, Dependencies.typesafeConfig,
-  Dependencies.akka, Dependencies.specs2, Dependencies.akkaSlf4j
+  Dependencies.akka, Dependencies.specs2, Dependencies.akkaSlf4j, Dependencies.scalaz
 ) ++ Dependencies.Spray.all
 
 dependencyOverrides ++= Scala.all.toSet

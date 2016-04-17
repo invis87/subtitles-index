@@ -4,19 +4,20 @@ import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.util.Timeout
 import com.quotify.subs.JsonProtocol._
 import com.quotify.subs.elastic.Elastic
-import com.quotify.subs.error.ErrorCode
-import com.quotify.subs.error.ServiceExceptions.SubtitlesParsingError
+import com.quotify.subs.error.Errors
+import com.quotify.subs.error.ServiceExceptions.ParseError
 import com.quotify.subs.parser.{Parser, Sub}
 import com.quotify.subs.protocol._
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.{ElasticClient, IndexResult, RichSearchHit, RichSearchResponse}
 import org.slf4j.LoggerFactory
 import spray.httpx.SprayJsonSupport._
-import spray.routing.{ExceptionHandler, HttpService}
 import spray.json._
+import spray.routing.HttpService
+
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success, Try}
+import scalaz.EitherT
 
 object MainActor {
   def props(elastic: ElasticClient): Props = Props(new MainActor(elastic))
@@ -27,13 +28,6 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
   def actorRefFactory: ActorRefFactory = context
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  implicit def myExceptionHandler() =
-    ExceptionHandler {
-      case e: SubtitlesParsingError =>
-        logger.warn("SubtitlesParsingError")
-        complete(ErrorResponse(ErrorCode.PARSING_ERROR, "subtitles parsing error"))
-    }
-
   def receive = runRoute(route)
 
   override def testConnection: TestConnection = {
@@ -41,12 +35,18 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     TestConnection("Successfully!")
   }
 
-  override def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded] = {
+  override def addMovieSubs(subtitles: SubtitlesEntity): ResponseF[SubtitlesAdded] = EitherT {
     logger.debug("Receive AddMoviesSubtitles request.\n{}", subtitles.toJson)
-    val trySubs = Try(Parser.parse(subtitles.subtitles.lines))
-    trySubs match {
-      case Success(subs) => indexing(subtitles.mediaId, subs)
-      case Failure(e) => throw new SubtitlesParsingError(e.getMessage, e)
+    val subsF = Future(Parser.parse(subtitles.subtitles.lines))
+
+    val result = for {
+      subs <- subsF
+      indexes <- indexing(subtitles.mediaId, subs)
+    } yield ok(indexes)
+
+    result recover {
+      case e: ParseError => fail(Errors.PARSING_ERROR)
+      case e => fail(Errors.INDEXING_ERROR)
     }
   }
 
@@ -78,14 +78,14 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     s"${mediaId}_$subNumber"
   }
 
-  override def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind] = {
+  override def searchSubs(searchEntity: SearchEntity): ResponseF[SubtitlesFind] = EitherT {
     val searchResult: Future[RichSearchResponse] = elastic.execute {
       search in Elastic.INDEX_NAME query searchEntity.text
     }
 
     searchResult.map(res => {
       logger.debug("Receive Search request for text '{}'. Search took {}s", searchEntity.text, res.tookInMillis/1000)
-      parseSearchRes(res.hits)
+      ok(parseSearchRes(res.hits))
     })
   }
 
@@ -104,8 +104,8 @@ trait MainService extends HttpService {
 
   def testConnection: TestConnection
 
-  def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind]
-  def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded]
+  def searchSubs(searchEntity: SearchEntity): ResponseF[SubtitlesFind]
+  def addMovieSubs(subtitles: SubtitlesEntity): ResponseF[SubtitlesAdded]
 
   val route = {
     (get & path("testConnection")) {

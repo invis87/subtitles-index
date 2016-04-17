@@ -10,6 +10,7 @@ object Dependencies {
   val akkaVersion = "2.4.3"
   val logbackVersion = "1.1.7"
   val akkaSlf4jVersion = "2.4.4"
+  val scalazVersion = "7.2.2"
 
   val elasticCore = "com.sksamuel.elastic4s" %% "elastic4s-core" % elasticVersion
   val elasticTestkit = "com.sksamuel.elastic4s" %% "elastic4s-testkit" % elasticVersion % "test"
@@ -20,6 +21,7 @@ object Dependencies {
 
   val specs2 = "org.specs2" %% "specs2-core" % specs2Version % "test"
   val logback = "ch.qos.logback" % "logback-classic" % logbackVersion
+  val scalaz = "org.scalaz" %% "scalaz-core" % scalazVersion
 
   object Scala {
     val scalaCompiler = "org.scala-lang" % "scala-compiler" % scalaVersion
