@@ -12,7 +12,8 @@ import scalaz.Scalaz._
 package object subs {
 
   type Response[JsonResponse]  = ErrorResponse \/ JsonResponse
-  type ResponseF[JsonResponse] = EitherT[Future, ErrorResponse, JsonResponse]
+  type ResponseF[JsonResponse] = Future[Response[JsonResponse]]
+  type ResponseT[JsonResponse] = EitherT[Future, ErrorResponse, JsonResponse]
 
   def ok[A](res: A): Response[A] = res.right
   def fail[A](f: ErrorResponse): Response[A] = f.left

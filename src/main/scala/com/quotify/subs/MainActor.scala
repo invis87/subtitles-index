@@ -35,7 +35,7 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     TestConnection("Successfully!")
   }
 
-  override def addMovieSubs(subtitles: SubtitlesEntity): ResponseF[SubtitlesAdded] = EitherT {
+  override def addMovieSubs(subtitles: SubtitlesEntity): ResponseT[SubtitlesAdded] = EitherT {
     logger.debug("Receive AddMoviesSubtitles request.\n{}", subtitles.toJson)
     val subsF = Future(Parser.parse(subtitles.subtitles.lines))
 
@@ -78,7 +78,7 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     s"${mediaId}_$subNumber"
   }
 
-  override def searchSubs(searchEntity: SearchEntity): ResponseF[SubtitlesFind] = EitherT {
+  override def searchSubs(searchEntity: SearchEntity): ResponseT[SubtitlesFind] = EitherT {
     val searchResult: Future[RichSearchResponse] = elastic.execute {
       search in Elastic.INDEX_NAME query searchEntity.text
     }
@@ -104,8 +104,8 @@ trait MainService extends HttpService {
 
   def testConnection: TestConnection
 
-  def searchSubs(searchEntity: SearchEntity): ResponseF[SubtitlesFind]
-  def addMovieSubs(subtitles: SubtitlesEntity): ResponseF[SubtitlesAdded]
+  def searchSubs(searchEntity: SearchEntity): ResponseT[SubtitlesFind]
+  def addMovieSubs(subtitles: SubtitlesEntity): ResponseT[SubtitlesAdded]
 
   val route = {
     (get & path("testConnection")) {
@@ -116,14 +116,14 @@ trait MainService extends HttpService {
       (post & path("search")) {
         entity(as[SearchEntity]) { search =>
           complete {
-            searchSubs(search)
+            searchSubs(search).run.response
           }
         }
       } ~
       (post & path("addMovieSubs")) {
         entity(as[SubtitlesEntity]) { subtitles =>
           complete {
-            addMovieSubs(subtitles)
+            addMovieSubs(subtitles).run.response
           }
         }
       }

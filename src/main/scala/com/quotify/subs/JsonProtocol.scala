@@ -3,7 +3,7 @@ package com.quotify.subs
 import com.quotify.subs.protocol._
 import spray.json._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scalaz._
 
 object JsonProtocol extends DefaultJsonProtocol {
@@ -16,12 +16,20 @@ object JsonProtocol extends DefaultJsonProtocol {
   implicit val searchEntityFormat = jsonFormat1(SearchEntity)
   implicit val subtitlesEntityFormat = jsonFormat2(SubtitlesEntity)
 
-  implicit val eitherTSubtitlesFindFormat = new JsonFormat[(ErrorResponse \/ SubtitlesFind)] {
-    def write(either: (ErrorResponse \/ SubtitlesFind)) = either match {
-      case -\/(a)  => a.toJson
-      case \/-(a) => a.toJson
+  //don't compile
+  implicit class ResponseFWrapper[A : JsonFormat](val res: ResponseF[A]) extends AnyVal {
+    def response(implicit exc: ExecutionContext) = res map {
+      case \/-(res) => res.toJson
+      case -\/(err) => err.toJson
     }
-    def read(value: JsValue) = deserializationError("Impossible to deserialize to EitherT")
   }
+
+  implicit class ResponseFSubtitlesAddedWrapper(val res: ResponseF[SubtitlesAdded]) extends AnyVal {
+    def response(implicit exc: ExecutionContext) = res map {
+      case \/-(res) => res.toJson
+      case -\/(err) => err.toJson
+    }
+  }
+
 
 }
