@@ -12,14 +12,14 @@ case class ErrorResponse(errorCode: Int, description: String)
 
 case class SubtitlesFind(subs: Seq[InternalFindedSub])
 
-case class InternalFindedSub(mediaId: String, from: String, to: String, text: String)
+case class InternalFindedSub(mediaId: Int, from: String, to: String, text: String)
 
 object FindedSub {
 
   def apply(hit: RichSearchHit): InternalFindedSub = {
     val map = hit.sourceAsMap
     InternalFindedSub(
-      hit.`type`,
+      map.get("mediaId").get.asInstanceOf[Int],
       map.get("from").get.asInstanceOf[String],
       map.get("to").get.asInstanceOf[String],
       map.get("text").get.asInstanceOf[String])
