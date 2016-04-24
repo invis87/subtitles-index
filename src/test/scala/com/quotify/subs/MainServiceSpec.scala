@@ -35,15 +35,15 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
 
   override def testConnection: TestConnection = TestConnection(testConnectionResponse)
 
-  override def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded] = {
+  override def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]] = {
     Future.successful(
       //todo: this is stub. fix it
-      SubtitlesAdded(475634765, List("475634765_1"))
+      OK(SubtitlesAdded(475634765, List("475634765_1")))
     )
   }
 
 
 
-  override def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind] = ???
+  override def searchSubs(searchEntity: SearchEntity): Future[Response[SubtitlesFind]] = ???
 
 }

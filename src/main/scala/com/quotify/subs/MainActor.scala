@@ -27,13 +27,6 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
   def actorRefFactory: ActorRefFactory = context
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  implicit def myExceptionHandler() =
-    ExceptionHandler {
-      case e: SubtitlesParsingError =>
-        logger.warn("SubtitlesParsingError")
-        complete(ErrorResponse(ErrorCode.PARSING_ERROR, "subtitles parsing error"))
-    }
-
   def receive = runRoute(route)
 
   override def testConnection: TestConnection = {
@@ -41,12 +34,15 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     TestConnection("Successfully!")
   }
 
-  override def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded] = {
+  override def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]] = {
     logger.debug("Receive AddMoviesSubtitles request.\n{}", subtitles.toJson)
     val trySubs = Try(Parser.parse(subtitles.subtitles.lines))
     trySubs match {
-      case Success(subs) => indexing(subtitles.mediaId, subs)
-      case Failure(e) => throw new SubtitlesParsingError(e.getMessage, e)
+      case Success(subs) => indexing(subtitles.mediaId, subs).map(OK)
+      case Failure(e) => {
+        logger.error("Error while parsing subtitles for mediaId #{}:\n{}", subtitles.mediaId, subtitles.subtitles)
+        Future(FAIL(ErrorResponse(ErrorCode.PARSING_ERROR, "subtitles parsing error")))
+      }
     }
   }
 
@@ -78,14 +74,14 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     s"${mediaId}_$subNumber"
   }
 
-  override def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind] = {
+  override def searchSubs(searchEntity: SearchEntity): Future[Response[SubtitlesFind]] = {
     val searchResult: Future[RichSearchResponse] = elastic.execute {
       search in Elastic.INDEX_NAME query searchEntity.text
     }
 
     searchResult.map(res => {
       logger.debug("Receive Search request for text '{}'. Search took {}s", searchEntity.text, res.tookInMillis/1000)
-      parseSearchRes(res.hits)
+      OK(parseSearchRes(res.hits))
     })
   }
 
@@ -104,8 +100,8 @@ trait MainService extends HttpService {
 
   def testConnection: TestConnection
 
-  def searchSubs(searchEntity: SearchEntity): Future[SubtitlesFind]
-  def addMovieSubs(subtitles: SubtitlesEntity): Future[SubtitlesAdded]
+  def searchSubs(searchEntity: SearchEntity): Future[Response[SubtitlesFind]]
+  def addMovieSubs(subtitles: SubtitlesEntity): Future[Response[SubtitlesAdded]]
 
   val route = {
     (get & path("testConnection")) {
