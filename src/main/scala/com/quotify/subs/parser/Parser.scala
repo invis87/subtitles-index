@@ -1,5 +1,7 @@
 package com.quotify.subs.parser
 
+import org.slf4j.LoggerFactory
+
 import scala.annotation.tailrec
 
 object Parser {
