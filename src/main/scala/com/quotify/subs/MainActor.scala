@@ -67,6 +67,13 @@ class MainActor(elastic: ElasticClient) extends Actor with MainService {
     }
 
     val resSeq: Future[List[IndexResult]] = Future.sequence(indexResults)
+
+
+    //todo: should have some logic here
+    resSeq onFailure {
+      case e => logger.error("Error while indexing subtitles.", e)
+    }
+
     resSeq.map(seq => processIndexingResult(seq))
   }
 

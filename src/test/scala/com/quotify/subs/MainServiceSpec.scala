@@ -4,7 +4,7 @@ import akka.actor.Actor.Receive
 import com.quotify.subs.protocol._
 import org.specs2.mutable.Specification
 import spray.testkit.Specs2RouteTest
-import spray.http.StatusCodes._
+import spray.http.StatusCodes
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -27,7 +27,7 @@ class MainServiceSpec extends Specification with Specs2RouteTest with MainServic
     "should return OK on testConnection" in {
       Get("/testConnection") ~> route ~> check {
         handled === true
-        response.status should be equalTo OK
+        response.status should be equalTo StatusCodes.OK
         responseAs[TestConnection].result === testConnectionResponse
       }
     }
